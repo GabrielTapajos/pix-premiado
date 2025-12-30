@@ -1,315 +1,130 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Pix Premiado Oficial</title>
-
-  <!-- PWA -->
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0f0f0f">
+  <meta charset="UTF-8">
+  <title>Pix Premiado</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
   <style>
-    :root{
-      --bg:#0f0f0f; --card:#151515; --gold:#d4af37; --green:#2ecc71; --red:#e74c3c; --muted:#bdbdbd;
-    }
-    *{box-sizing:border-box}
-    body{margin:0;font-family:Inter,Arial;background:var(--bg);color:#fff}
+    body{margin:0;font-family:Arial;background:#0f0f0f;color:#fff}
     header{text-align:center;padding:20px}
-    h1{color:var(--gold);margin:0 0 6px}
-    .wrap{max-width:1100px;margin:auto;padding:16px}
-    .badges{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
-    .badge{background:var(--card);border-radius:999px;padding:6px 10px;font-size:12px;color:#eaeaea}
-    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:10px}
-    .num{padding:14px 0;border-radius:14px;text-align:center;cursor:pointer;font-weight:700}
+    h1{color:#d4af37}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:10px}
+    .num{padding:14px;border-radius:10px;text-align:center;font-weight:bold;cursor:pointer}
     .available{background:#1b1b1b}
     .reserved{background:#7f8c8d;cursor:not-allowed}
-    .sold{background:var(--red);cursor:not-allowed}
-    .available:hover{outline:2px solid var(--gold)}
-    .cta{position:sticky;bottom:0;background:linear-gradient(transparent, rgba(0,0,0,.75));padding:12px}
-    .btn{width:100%;padding:14px;border:none;border-radius:14px;font-weight:800;background:var(--green);color:#0b2a18}
-    .btn.secondary{background:#222;color:#fff}
-    .row{display:grid;grid-template-columns:1fr;gap:12px}
-    .card{background:var(--card);border-radius:16px;padding:14px}
-    .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
-    .kpi{background:#1b1b1b;border-radius:12px;padding:10px;text-align:center}
-    .kpi b{font-size:18px}
-    .timer{font-size:14px;color:#ffeaa7;text-align:center}
-    footer{text-align:center;font-size:12px;color:var(--muted);padding:16px}
-    /* Admin */
+    .sold{background:#e74c3c;cursor:not-allowed}
+    .wrap{max-width:1000px;margin:auto;padding:16px}
+    button{padding:12px;width:100%;border:none;border-radius:10px;font-weight:bold;background:#2ecc71}
+    input,textarea{width:100%;padding:10px;border-radius:8px;margin-bottom:8px;border:none}
     #admin{display:none}
-    .admin-actions{display:flex;gap:8px;flex-wrap:wrap}
-    input,select{width:100%;padding:10px;border-radius:10px;border:none}
   </style>
 </head>
 <body>
 
 <header>
-  <h1>PIX PREMIADO OFICIAL</h1>
-  <p>Escolha seu número • Sorteio ao vivo • Pix imediato</p>
-  <div class="badges">
-    <span class="badge">✔ Sorteio ao vivo</span>
-    <span class="badge">✔ Pagamento imediato</span>
-    <span class="badge">✔ Transparente</span>
-  </div>
+  <h1>PIX PREMIADO</h1>
+  <p>Escolha seu número e participe</p>
 </header>
 
-<main class="wrap">
-  <section id="selector" class="card" style="margin-bottom:16px">
-    <h3>Sorteios Ativos</h3>
-    <select id="raffleSelect"></select>
-  </section>
-  <section class="row">
-    <div class="card">
-      <h2>Escolha seu número</h2>
-      <div id="grid" class="grid"></div>
-      
-    </div>
-
-    <div class="card">
-      <h3>Pagamento (Pix)</h3>
-      <p>Após reservar, pague via Pix usando o QR Code ou Copia e Cola.</p>
-      <img id="qrcode" alt="QR Code Pix" style="max-width:220px;display:none;margin:auto" />
-      <textarea id="pixcopy" readonly style="width:100%;margin-top:10px;border-radius:10px;padding:10px;display:none">00020126580014BR.GOV.BCB.PIX0136SUA-CHAVE-PIX-AQUI520400005303986540515.005802BR5920PIX PREMIADO6009SAO PAULO62070503***6304ABCD</textarea>
-      <button id="copyPix" class="btn secondary" style="display:none;margin-top:8px">Copiar Pix</button>
-    </div>
-
-    
-        <div class="kpi"><b id="kAvail">0</b><div>Disponíveis</div></div>
-        <div class="kpi"><b id="kTotal">R$ 0</b><div>Arrecadado</div></div>
-      </div>
-    </div>
-
-    <div id="admin" class="card">
-  <h3>Admin</h3>
-  <h4>Novo sorteio</h4>
-  <input id="rName" placeholder="Nome do sorteio" />
-  <input id="rTotal" placeholder="Qtd de números" />
-  <input id="rPrice" placeholder="Valor por número" />
-  <input id="rPrize" placeholder="Premiação (ex: 500 / 300 / 200)" />
-  <button class="btn secondary" onclick="createRaffle()">Criar sorteio</button>
-  <hr/>
-  <h4>Gerenciar números</h4>
-  <input id="adminNum" placeholder="Número (ex: 07)" />
-  <button class="btn secondary" onclick="markSold()">Confirmar pagamento</button>
-  <button class="btn secondary" onclick="freeNum()">Liberar número</button>
-  <button class="btn secondary" onclick="exportSold()">Exportar CSV</button>
-</div>
-    </div>
-    </div>
-  </section>
-</main>
-
-<div class="cta">
-  <button id="btn" class="btn" disabled>Selecione um número</button>
+<div id="public" class="wrap">
+  <h2>Escolha um número</h2>
+  <div id="grid" class="grid"></div>
+  <br>
+  <button id="btn" disabled>Confirmar no WhatsApp</button>
 </div>
 
-<footer>
-  Ação recreativa entre membros • Não é investimento
-</footer>
+<div id="admin" class="wrap">
+  <h2>Painel Administrativo</h2>
+  <input id="raffleName" placeholder="Nome do sorteio">
+  <input id="totalNumbers" type="number" placeholder="Quantidade de números">
+  <input id="price" type="number" placeholder="Valor por número">
+  <textarea id="prizes" placeholder="Premiação"></textarea>
+  <button onclick="createRaffle()">Criar Sorteio</button>
+</div>
 
 <script>
-  // 🔧 CONFIGURAÇÕES
-  let CURRENT_RAFFLE = 'padrao';
+// CONFIGURAÇÕES
+const WHATSAPP = '5593991804791';
+const firebaseConfig = {
+  apiKey: "SUA_API_KEY",
+  authDomain: "SEU_DOMINIO.firebaseapp.com",
+  databaseURL: "https://SEU_DOMINIO.firebaseio.com",
+  projectId: "SEU_PROJECT_ID",
+  appId: "APP_ID"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
+
 let TOTAL = 150;
 let PRICE = 15;
-const WHATSAPP = '5593991804791';
-const ADMIN_KEY = '#admin'; // acessar com ?admin
+let selected = null;
 
-  // 🔥 FIREBASE (PREENCHA COM SEU PROJETO)
-  const firebaseConfig = {
-    apiKey: "SUA_API_KEY",
-    authDomain: "SEU_DOMINIO.firebaseapp.com",
-    databaseURL: "https://SEU_DOMINIO.firebaseio.com",
-    projectId: "SEU_PROJECT_ID",
-    storageBucket: "SEU_PROJECT_ID.appspot.com",
-    messagingSenderId: "ID",
-    appId: "APP_ID"
-  };
+const grid = document.getElementById('grid');
+const btn = document.getElementById('btn');
 
-  firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-const auth = firebase.auth();
-
-const raffleSelect = document.getElementById('raffleSelect');
-
-function loadRaffles(){
-  db.ref('raffles').once('value').then(s=>{
-    raffleSelect.innerHTML='';
-    s.forEach(r=>{
-      const o=document.createElement('option');
-      o.value=r.key; o.innerText=r.val().name;
-      raffleSelect.appendChild(o);
-    });
-    CURRENT_RAFFLE = raffleSelect.value;
-    loadConfig();
-  })
+function buildGrid(){
+  grid.innerHTML='';
+  for(let i=1;i<=TOTAL;i++){
+    const n = String(i).padStart(2,'0');
+    const d = document.createElement('div');
+    d.innerText = n;
+    d.className = 'num available';
+    d.onclick = ()=>selectNumber(n);
+    grid.appendChild(d);
+  }
 }
 
-raffleSelect.onchange=()=>{
-  CURRENT_RAFFLE = raffleSelect.value;
-  loadConfig();
+function selectNumber(n){
+  selected = n;
+  btn.disabled=false;
+  btn.innerText = 'Confirmar número '+n;
 }
 
-function loadConfig(){
-  db.ref('raffles/'+CURRENT_RAFFLE+'/config').once('value').then(s=>{
-    const c=s.val(); if(!c) return;
-    TOTAL=c.total; PRICE=c.price;
-    grid.innerHTML=''; createGrid();
-  })
+btn.onclick = ()=>{
+  const msg = `Olá! Escolhi o número ${selected} no Pix Premiado.`;
+  window.open(`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`,'_blank');
 }
 
-loadRaffles();
+// ADMIN
+function showAdmin(){
+  document.getElementById('admin').style.display='block';
+  document.getElementById('public').style.display='none';
+}
 
-  // ADMIN AUTH (BLINDADO)
-function requireAdmin(){
+if(location.search.includes('admin')){
   auth.onAuthStateChanged(user=>{
-    if(!user){
+    if(user){
+      showAdmin();
+    } else {
       const email = prompt('Email do admin:');
       const pass = prompt('Senha do admin:');
-      auth.signInWithEmailAndPassword(email, pass)
-        .then(()=> document.getElementById('admin').style.display='block')
-        .catch(()=> alert('Acesso negado'));
-    }else{
-      document.getElementById('admin').style.display='block';
+      auth.signInWithEmailAndPassword(email,pass)
+        .then(showAdmin)
+        .catch(()=>alert('Acesso negado'));
     }
   })
 }
 
-if(location.search.includes('admin')){
-  requireAdmin();
-}
-  if(location.search.includes('admin')) document.getElementById('admin').style.display='block';
+function createRaffle(){
+  const name = document.getElementById('raffleName').value;
+  TOTAL = Number(document.getElementById('totalNumbers').value);
+  PRICE = Number(document.getElementById('price').value);
+  const prizes = document.getElementById('prizes').value;
 
-  const grid = document.getElementById('grid');
-  const btn = document.getElementById('btn');
-  const timerEl = document.getElementById('timer');
-  const kSold = document.getElementById('kSold');
-  const kAvail = document.getElementById('kAvail');
-  const kTotal = document.getElementById('kTotal');
-  const qr = document.getElementById('qrcode');
-
-  let selected = null;
-  
-
-  function createGrid(){
-  for(let i=1;i<=TOTAL;i++){
-    const n=String(i).padStart(2,'0');
-    const d=document.createElement('div');
-    d.id='n'+n; d.className='num available'; d.innerText=n;
-    d.onclick=()=>selectNumber(n);
-    grid.appendChild(d);
-
-    db.ref(`raffles/${CURRENT_RAFFLE}/numbers/${n}`).on('value',snap=>{
-      const data=snap.val();
-      if(!data){ d.className='num available'; return; }
-      if(data.status==='reserved') d.className='num reserved';
-      if(data.status==='sold') d.className='num sold';
-    })
-  }
+  db.ref('raffles').push({name,TOTAL,PRICE,prizes,created:Date.now()});
+  alert('Sorteio criado com sucesso');
 }
 
-createGrid();
-
-    db.ref(`raffles/${CURRENT_RAFFLE}/numbers/`+'+n).on('value', snap=>{
-      const data = snap.val();
-      if(!data){ d.className='num available'; updateKpis(); return; }
-      if(data.status==='reserved') d.className='num reserved';
-      if(data.status==='sold') d.className='num sold';
-      updateKpis();
-    });
-  }
-
-  function updateKpis(){
-    db.ref('numbers').once('value').then(s=>{
-      let sold=0, used=0;
-      s.forEach(c=>{ if(c.val().status==='sold') sold++; if(c.val()) used++; });
-      kSold.innerText = sold;
-      kAvail.innerText = TOTAL - used;
-      kTotal.innerText = 'R$ ' + (sold*PRICE);
-    });
-  }
-
-  function selectNumber(n){
-    const ref = db.ref(`raffles/${CURRENT_RAFFLE}/numbers/`+'+n);
-    ref.once('value').then(snap=>{
-      if(snap.exists() && snap.val().status!=='available') return;
-      selected = n; btn.disabled=false;
-      btn.innerText = `Confirmar número ${n} no WhatsApp`;
-      ref.set({ status:'reserved', time: Date.now() });
-      
-      // QR Pix (placeholder – troque pelo seu QR real se quiser)
-      qr.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=PIX+NUMERO+${n}`;
-      qr.style.display='block';
-      document.getElementById('pixcopy').style.display='block';
-      document.getElementById('copyPix').style.display='block';
-    });
-  }
-
-          const left = RESERVE_TIME - (Date.now()-s.val().time);
-        if(left<=0){ ref.remove(); timerEl.innerText='Reserva expirada'; clearInterval(timerInt); return; }
-        const m = Math.floor(left/60000); const sec = Math.floor((left%60000)/1000);
-        timerEl.innerText = `⏳ Reserva expira em ${m}:${String(sec).padStart(2,'0')}`;
-      });
-    },1000);
-  }
-
-  document.getElementById('copyPix').onclick = ()=>{
-    const t = document.getElementById('pixcopy');
-    t.select(); document.execCommand('copy'); alert('Pix copiado!');
-  }
-
-  btn.onclick = ()=>{
-    if(!selected) return;
-    const msg = `Olá! Reservei o número ${selected} no Pix Premiado. Vou enviar o Pix agora para confirmar.`;
-    window.open(`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`,'_blank');
-  }
-
-  // EXPORTAR LISTA
-  function exportSold(){
-    db.ref('numbers').once('value').then(s=>{
-      let csv='Numero,Status
-';
-      s.forEach(c=>{ csv+=`${c.key},${c.val().status}
-`; });
-      const blob=new Blob([csv]);
-      const a=document.createElement('a');
-      a.href=URL.createObjectURL(blob); a.download='numeros.csv'; a.click();
-    })
-  }
-
-  // CRIAR SORTEIO
-  function createRaffle(){
-    const name=document.getElementById('rName').value;
-    const total=parseInt(document.getElementById('rTotal').value);
-    const price=parseFloat(document.getElementById('rPrice').value);
-    const prizes=document.getElementById('rPrize').value;
-    if(!name||!total||!price) return alert('Preencha tudo');
-    const id=Date.now();
-    db.ref('raffles/'+id).set({
-      name,
-      prizes,
-      config:{total,price}
-    }).then(loadRaffles);
-  }
-
-// ADMIN ACTIONS
-  function markSold(){
-    const n = document.getElementById('adminNum').value;
-    if(!n) return; db.ref(`raffles/${CURRENT_RAFFLE}/numbers/`+'+n).set({status:'sold', time: Date.now()});
-  }
-  function freeNum(){
-    const n = document.getElementById('adminNum').value;
-    if(!n) return; db.ref(`raffles/${CURRENT_RAFFLE}/numbers/`+'+n).remove();
-  }
-
-  // SERVICE WORKER
-  if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js'); }
+buildGrid();
 </script>
+
 </body>
 </html>
